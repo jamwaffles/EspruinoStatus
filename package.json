@@ -8,5 +8,8 @@
     "aws-sdk": "^2.184.0",
     "isomorphic-fetch": "^2.2.1",
     "ws": "^4.0.0"
+  },
+  "scripts": {
+    "start": "node --experimental-modules index.mjs"
   }
 }
