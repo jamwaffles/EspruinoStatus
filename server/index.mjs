@@ -1,7 +1,6 @@
 import 'isomorphic-fetch'
 import WebSocket from 'ws'
 
-
 const wss = new WebSocket.Server({ port: 8080 });
 
 console.info("Listening on 8080")
