@@ -1,5 +1,5 @@
 /* Copyright (c) 2015 Gordon Williams, Pur3 Ltd. Modified by James Waples 2018 */
-/* 
+/*
 Library for interfacing to the EspressIF ESP8266. Uses the 'NetworkJS'
 library to provide a JS endpoint for HTTP.
 
@@ -26,7 +26,7 @@ true              : connected and ready
 var netCallbacks = {
   create : function(host, port) {
     /* Create a socket and return its index, host is a string, port is an integer.
-    If host isn't defined, create a server socket */  
+    If host isn't defined, create a server socket */
     if (host===undefined) {
       sckt = MAXSOCKETS;
       socks[sckt] = "Wait";
@@ -42,7 +42,7 @@ var netCallbacks = {
         }
       });
       return MAXSOCKETS;
-    } else {  
+    } else {
       var sckt = 0;
       while (socks[sckt]!==undefined) sckt++; // find free socket
       if (sckt>=MAXSOCKETS) return -7; // SOCKET_ERR_MAX_SOCK
@@ -55,7 +55,7 @@ var netCallbacks = {
     return sckt;
   },
   /* Close the socket. returns nothing */
-  close : function(sckt) {    
+  close : function(sckt) {
     if (socks[sckt]=="Wait")
       socks[sckt]="WaitClose";
     else if (socks[sckt]!==undefined) {
@@ -82,7 +82,7 @@ var netCallbacks = {
   },
   /* Receive data. Returns a string (even if empty).
   If non-string returned, socket is then closed */
-  recv : function(sckt, maxLen) {    
+  recv : function(sckt, maxLen) {
     if (sockData[sckt]) {
       var r;
       if (sockData[sckt].length > maxLen) {
@@ -104,29 +104,29 @@ var netCallbacks = {
   Less than 0  */
   send : function(sckt, data) {
     if (at.isBusy() || socks[sckt]=="Wait") return 0;
-    if (socks[sckt]<0) return socks[sckt]; // report an error 
+    if (socks[sckt]<0) return socks[sckt]; // report an error
     if (!socks[sckt]) return -1; // close it
     //console.log("Send",sckt,data);
-   
+
     var cmd = 'AT+CIPSEND='+sckt+','+data.length+'\r\n';
-    at.cmd(cmd, 10000, function cb(d) {       
+    at.cmd(cmd, 10000, function cb(d) {
       if (d=="OK") {
         at.register('> ', function() {
           at.unregister('> ');
-          at.write(data);          
+          at.write(data);
           return "";
         });
         return cb;
       } else if (d=="Recv "+data.length+" bytes") {
-        // all good, we expect this 
+        // all good, we expect this
         return cb;
       } else if (d=="SEND OK") {
         // we're ready for more data now
         if (socks[sckt]=="WaitClose") netCallbacks.close(sckt);
         socks[sckt]=true;
       } else {
-        socks[sckt]=undefined; // uh-oh. Error.      
-        at.unregister('> '); 
+        socks[sckt]=undefined; // uh-oh. Error.
+        at.unregister('> ');
       }
     });
     // if we obey the above, we shouldn't get the 'busy p...' prompt
@@ -147,10 +147,10 @@ function ipdHandler(line) {
    // we have everything
    sockData[parms[0]] += line.substr(colon+1,parms[1]);
    return line.substr(colon+parms[1]+1); // return anything else
-  } else { 
+  } else {
    // still some to get
    sockData[parms[0]] += line.substr(colon+1,len);
-   return "+IPD,"+parms[0]+","+(parms[1]-len)+":"; // return IPD so we get called next time    
+   return "+IPD,"+parms[0]+","+(parms[1]-len)+":"; // return IPD so we get called next time
   }
 }
 
@@ -163,8 +163,8 @@ var wifiFuncs = {
     };
   },
   // initialise the ESP8266
-  "init" : function(callback) { 
-    at.cmd("ATE0\r\n",1000,function cb(d) { // turn off echo    
+  "init" : function(callback) {
+    at.cmd("ATE0\r\n",1000,function cb(d) { // turn off echo
       if (d=="ATE0") return cb;
       if (d=="OK") {
         at.cmd("AT+CIPMUX=1\r\n",1000,function(d) { // turn on multiple sockets
@@ -174,18 +174,12 @@ var wifiFuncs = {
       }
       else callback("ATE0 failed: "+(d?d:"Timeout"));
     });
-  },  
+  },
   "reset" : function(callback) {
     at.cmd("\r\nAT+RST\r\n", 10000, function cb(d) {
       //console.log(">>>>>"+JSON.stringify(d));
       // 'ready' for 0.25, 'Ready.' for 0.50
       setTimeout(function() { wifiFuncs.init(callback); }, 1000);
-    });
-  },
-  "getVersion" : function(callback) {
-    at.cmd("AT+GMR\r\n", 1000, function(d) {
-      // works ok, but we could get more data
-      callback(null,d);
     });
   },
   "connect" : function(ssid, key, callback) {
@@ -197,34 +191,6 @@ var wifiFuncs = {
         if (d!="OK") setTimeout(callback,0,"WiFi connect failed: "+(d?d:"Timeout"));
         else setTimeout(callback,0,null);
       });
-    });
-  },
-  "getAPs" : function (callback) {
-    var aps = [];
-    at.cmdReg("AT+CWLAP\r\n", 5000, "+CWLAP:",
-              function(d) { 
-                var ap = d.slice(8,-1).split(","); 
-                aps.push({ ssid : JSON.parse(ap[1]),
-                           enc: ENCR_FLAGS[ap[0]],                           
-                           signal: parseInt(ap[2]),
-                           mac : JSON.parse(ap[3]) }); 
-              },
-              function(d) { callback(null, aps); });
-  },
-  "getConnectedAP" : function(callback) {
-    var con;
-    at.cmdReg("AT+CWJAP?\r\n", 1000, "+CWJAP:",
-              function(d) { con=JSON.parse(d.slice(7)); },
-              function(d) { callback(null, con); });
-  },
-  "getIP" : function(callback) {
-    var ip;
-    at.cmdReg("AT+CIFSR\r\n", 1000, "+CIFSR", function(d) { 
-      if (!ip && d.indexOf(',')>=0) ip=JSON.parse(d.slice(d.indexOf(',')+1)); 
-    }, function(d) { 
-      console.log("IP res", d);
-      if (d!="OK") callback("CIFSR failed: "+d); 
-      else callback(null, ip); 
     });
   }
 };
@@ -239,9 +205,9 @@ function sckClosed(ln) {
 }
 
 exports.connect = function(usart) {
-  wifiFuncs.at = at = require("AT").connect(usart);  
+  wifiFuncs.at = at = require("AT").connect(usart);
   require("NetworkJS").create(netCallbacks);
-  
+
   at.register("+IPD", ipdHandler);
   at.registerLine("0,CONNECT", sckOpen);
   at.registerLine("1,CONNECT", sckOpen);
@@ -252,7 +218,7 @@ exports.connect = function(usart) {
   at.registerLine("1,CLOSED", sckClosed);
   at.registerLine("2,CLOSED", sckClosed);
   at.registerLine("3,CLOSED", sckClosed);
-  at.registerLine("4,CLOSED", sckClosed);  
+  at.registerLine("4,CLOSED", sckClosed);
 
   return wifiFuncs;
 };
