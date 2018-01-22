@@ -11,6 +11,10 @@
     "ws": "^4.0.0"
   },
   "scripts": {
-    "start": "node --experimental-modules ./server/index.mjs"
+    "start": "node --experimental-modules ./server/index.mjs",
+    "build": "uglifyjs -c -o esp8266_0v25_hacked.min.js esp8266_0v25_hacked.js"
+  },
+  "devDependencies": {
+    "uglify-js": "^3.3.8"
   }
 }
