@@ -184,9 +184,9 @@ var wifiFuncs = {
   },
   "connect" : function(ssid, key, callback) {
     at.cmd("AT+CWMODE=1\r\n", 1000, function(cwm) {
-      console.log("CWM", cwm);
+      // console.log("CWM", cwm);
       at.cmd("AT+CWJAP="+JSON.stringify(ssid)+","+JSON.stringify(key)+"\r\n", 20000, function cb(d) {
-        console.log('d', d);
+        // console.log('d', d);
         if (["WIFI DISCONNECT","WIFI CONNECTED","WIFI GOT IP","+CWJAP:1"].indexOf(d)>=0) return cb;
         if (d!="OK") setTimeout(callback,0,"WiFi connect failed: "+(d?d:"Timeout"));
         else setTimeout(callback,0,null);

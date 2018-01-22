@@ -39,7 +39,6 @@ function connectToDisplay(cb) {
   var s = new SPI();
   s.setup({mosi: B6 /* D1 */, sck:B5 /* D0 */});
   var g = require("SSD1306").connectSPI(s, A8 /* DC */, B7 /* RST - can leave as undefined */, function() {
-    console.log("Noice");
     cb(g);
   });
 }
