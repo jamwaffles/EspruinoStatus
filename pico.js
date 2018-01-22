@@ -1,13 +1,9 @@
-// function start_mono(){
-//  // write some text
-//  g_mono.drawString("Hello World!",2,2);
-//  // write to the screen
-//  g_mono.flip();
-// }
+require("FontDennis8").add(Graphics);
+require("Font8x16").add(Graphics);
 
-// // I2C
-// I2C1.setup({scl:B6,sda:B7});
-// var g_mono = require("SSD1306").connect(I2C1, start_mono);
+var g = undefined
+const screenWidth = 128;
+const screenHeight = 64;
 
 var WebSocket = require("ws");
 
@@ -21,14 +17,14 @@ function connectToWifi(cb) {
   var wifi = esp.connect(Serial2);
 
   wifi.reset(function(e) {
-    wifi.connect("ClownsUnderTheBed","3dooty5g", function(e) {
+    wifi.connect("VM5E8381", "C4m851nt3l!", function(e) {
       cb();
     });
   });
 }
 
 function connectToWebsocket(cb) {
-  var host = '192.168.0.8';
+  var host = '192.168.1.64';
 
   var ws = new WebSocket(host, { port: 8080 });
 
@@ -48,40 +44,75 @@ function connectToDisplay(cb) {
   });
 }
 
-function drawTime(d, time){
-  d.clear();
-  // write some text
-  d.drawString("Da tiem:",2,2);
+function writeYellowBar(line1, line2, bigNumber) {
+  const yellowBarTopleft = 48;
 
-  d.drawString(time,2,20);
-  // write to the screen
-  d.flip();
+  if(line1 !== undefined) {
+    g.setFontDennis8();
+    g.drawString(line1, 0, yellowBarTopleft);
+  }
+
+  if(line2 !== undefined) {
+    g.setFontDennis8();
+    g.drawString(line2, 0, yellowBarTopleft + 8);
+  }
+
+  if(bigNumber !== undefined) {
+    g.setFont8x16();
+
+    // Clear this many pixels from the right
+    const toClear = g.stringWidth(bigNumber) + 1
+
+    g.drawString(bigNumber, screenWidth - (toClear + 1), yellowBarTopleft);
+  }
 }
 
 console.log("Starting");
 
-connectToDisplay(function(disp) {
-  console.log("Connected to display");
+let doStart = true;
 
-  disp.clear();
-  disp.drawString("Connecting...",2,2);
-  disp.flip();
+function start() {
+  if(!doStart) {
+    return
+  }
 
-  connectToWifi(function() {
-    console.log("Connected to wifi");
-    disp.clear();
-    disp.drawString("Opening socket...",2,2);
-    disp.flip();
+  doStart = false;
 
-    connectToWebsocket(function(ws) {
-      console.log("All ready");
-      disp.clear();
-      disp.drawString("Waiting for messages...",2,2);
-      disp.flip();
+  console.log("Starting...");
 
-      ws.on('message', function(msg) {
-        drawTime(disp, msg);
+  connectToDisplay(function(disp) {
+    console.log("Connected to display");
+    g = disp
+
+    // Upside down display
+    g.setRotation(2, false);
+
+    g.clear();
+    g.drawString("Connecting...",2,2);
+    g.flip();
+
+    connectToWifi(function() {
+      console.log("Connected to wifi");
+      g.clear();
+      g.drawString("Opening socket...",2,2);
+      g.flip();
+
+      connectToWebsocket(function(ws) {
+        console.log("All ready");
+        g.clear();
+        g.drawString("Waiting for messages...",2,2);
+        g.flip();
+
+        ws.on('message', function(msg) {
+          g.clear();
+
+          writeYellowBar("The", "time", msg);
+
+          g.flip();
+        });
       });
     });
   });
-});
+}
+
+start();
