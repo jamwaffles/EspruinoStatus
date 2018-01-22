@@ -8,7 +8,7 @@ const screenHeight = 64;
 var WebSocket = require("ws");
 
 function connectToWifi(cb) {
-  var esp = require("https://raw.githubusercontent.com/jamwaffles/EspruinoStatus/master/esp8266_0v25_hacked.js");
+  var esp = require("https://raw.githubusercontent.com/jamwaffles/EspruinoStatus/master/esp8266_0v25_hacked.min.js");
 
   digitalWrite(B9,1);
 
