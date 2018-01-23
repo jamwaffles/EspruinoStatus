@@ -4,6 +4,7 @@ require("Font8x16").add(Graphics);
 var g = undefined
 const screenWidth = 128;
 const screenHeight = 64;
+const yellowBarHeight = 16;
 
 var WebSocket = require("ws");
 
@@ -17,14 +18,14 @@ function connectToWifi(cb) {
   var wifi = esp.connect(Serial2);
 
   wifi.reset(function(e) {
-    wifi.connect("VM5E8381", "C4m851nt3l!", function(e) {
+    wifi.connect("ClownsUnderTheBed", "3dooty5g", function(e) {
       cb();
     });
   });
 }
 
 function connectToWebsocket(cb) {
-  var host = '192.168.1.64';
+  var host = '192.168.0.8';
 
   var ws = new WebSocket(host, { port: 8080 });
 
@@ -66,19 +67,38 @@ function writeYellowBar(line1, line2, bigNumber) {
   }
 }
 
-console.log("Starting");
+function startDvdBouncer() {
+  var dvd = {
+    width : 34, height : 18, bpp : 1,
+    transparent : 0,
+    buffer : E.toArrayBuffer(atob("H/8H/gf/w//gB/DgPOD+dwc4e7nDzh78cOf/Hj/5/wcP+AABwAAAACAAAAf/4AD/4H/w/+AH/w////+AB//wAEkogoAMSTkQAROOOAA="))
+  };
 
-let doStart = true;
+  var posx = 0;
+  var posy = 0;
+  var velx = 1;
+  var vely = 0.8;
+  var ylimit = screenHeight - yellowBarHeight;
 
-function start() {
-  if(!doStart) {
-    return
+  function dvdBouncer() {
+    g.drawImage(dvd, posx, posy);
+
+    posx += velx;
+    posy += vely;
+
+    if(posx + dvd.width > screenWidth || posx < 0) {
+      velx *= -1;
+    }
+
+    if(posy + dvd.height > ylimit || posy < 0) {
+      vely *= -1;
+    }
   }
 
-  doStart = false;
+  return dvdBouncer
+}
 
-  console.log("Starting...");
-
+function start() {
   connectToDisplay(function(disp) {
     console.log("Connected to display");
     g = disp
@@ -102,16 +122,26 @@ function start() {
         g.drawString("Waiting for messages...",2,2);
         g.flip();
 
+        var time = "...";
+
         ws.on('message', function(msg) {
+          time = msg;
+        });
+
+        var dvdBounceIter = startDvdBouncer();
+
+        setInterval(function() {
           g.clear();
 
-          writeYellowBar("The", "time", msg);
+          dvdBounceIter();
+          writeYellowBar("The", "time", time);
 
           g.flip();
-        });
+        }, 16);
       });
     });
   });
 }
 
-start();
+E.on('init', start);
+// start();
