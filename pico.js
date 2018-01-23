@@ -95,49 +95,41 @@ function startDvdBouncer() {
     }
   }
 
-  return dvdBouncer
+  return dvdBouncer;
 }
 
 function start() {
   connectToDisplay(function(disp) {
-    console.log("Connected to display");
-    g = disp
+    var time = ".";
+    var dvdBounceIter = startDvdBouncer();
+
+    g = disp;
 
     // Upside down display
     g.setRotation(2, false);
 
-    g.clear();
-    g.drawString("Connecting...",2,2);
-    g.flip();
+    setInterval(function() {
+      g.clear();
+
+      dvdBounceIter();
+      writeYellowBar("The", "time", time);
+
+      g.flip();
+    }, 16);
 
     connectToWifi(function() {
-      console.log("Connected to wifi");
-      g.clear();
-      g.drawString("Opening socket...",2,2);
-      g.flip();
+      time = '...';
 
       connectToWebsocket(function(ws) {
-        console.log("All ready");
-        g.clear();
-        g.drawString("Waiting for messages...",2,2);
-        g.flip();
+        time = '..';
 
-        var time = "...";
+        ws.on('close', function() {
+          time = 'E';
+        });
 
         ws.on('message', function(msg) {
           time = msg;
         });
-
-        var dvdBounceIter = startDvdBouncer();
-
-        setInterval(function() {
-          g.clear();
-
-          dvdBounceIter();
-          writeYellowBar("The", "time", time);
-
-          g.flip();
-        }, 16);
       });
     });
   });
